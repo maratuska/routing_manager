@@ -1,0 +1,66 @@
+version: '3.7'
+
+services:
+  gateway_service:
+    container_name: rm-gateway_service
+    build:
+      context: ./gateway_service
+    ports:
+      - "8001:8000"
+    environment:
+      - API_TITLE=API Gateway service
+      - API_DESCRIPTION=Service prototype for routing management
+      - ROUTING_SERVICE_URL=http://routing_service:8000/
+      - USERS_SERVICE_URL=http://users_service:8000/
+      - DEBUG_MODE=true
+    volumes:
+      - ./gateway_service/:/app/
+    depends_on:
+      - routing_service
+      - users_service
+    command: uvicorn app.app:app_instance --reload --host 0.0.0.0 --port 8000
+
+  routing_service:
+    container_name: rm-routing_service
+    build:
+      context: ./routing_service
+    ports:
+      - "8002:8000"
+    environment:
+      - API_TITLE=Routing service
+      - POSTGRES_URL=postgresql+asyncpg://user_pg:password_pg@postgres/routing_manager
+      - DEBUG_MODE=true
+    volumes:
+      - ./routing_service/:/app/
+    depends_on:
+      - users_service
+      - postgres
+    command: uvicorn app.app:app_instance --reload --host 0.0.0.0 --port 8000
+
+  users_service:
+    container_name: rm-users_service
+    build:
+      context: ./users_service
+    ports:
+      - "8003:8000"
+    environment:
+      - API_TITLE=Users service
+      - POSTGRES_URL=postgresql+asyncpg://user_pg:password_pg@postgres/routing_manager
+      - JWT_SECRET=dd83233173f4526ee8061658e7eee2c306e76e3070d22159ea63d61ac84accc8
+      - JWT_EXPIRES_S=36000
+      - DEBUG_MODE=true
+    volumes:
+      - ./users_service/:/app/
+    depends_on:
+      - postgres
+    command: uvicorn app.app:app_instance --reload --host 0.0.0.0 --port 8000
+
+  postgres:
+    container_name: rm-postgres
+    image: postgres:12.1-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=user_pg
+      - POSTGRES_PASSWORD=password_pg
+      - POSTGRES_DB=routing_manager
