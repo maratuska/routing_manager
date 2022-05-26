@@ -1,6 +1,6 @@
 # Routing manager
 
-Prototype of service for routing management
+Prototype of service for routing management. Microservices on FastAPI and SQLModel.
 
 ## Service contains microservices
 
